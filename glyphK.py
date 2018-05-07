@@ -772,6 +772,10 @@ def input(e):
 			arcs = []
 			blank()
 	if e.type == pygame.KEYDOWN:
+		# only allow two keys at a time
+		if len(pressed) == 2:
+			return
+
 		key = e.key
 		name = e.unicode
 		if name not in node_pos:
