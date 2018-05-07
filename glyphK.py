@@ -834,6 +834,7 @@ def main():
 		arclist = glyph_dict[glyphname]
 		drawglyph(arclist, beige)
 		pygame.display.flip()
+		pygame.event.pump()
 		pygame.time.wait(300)
 
 	blank()
@@ -898,6 +899,7 @@ def main():
 	surface.unlock()
 	surface.blit(rbox, (int(centre_x - rwidth/2), int(centre_y - rheight/2)) )
 	pygame.display.flip()
+	pygame.event.pump()
 
 	pygame.time.wait(2000)
 
