@@ -672,12 +672,22 @@ def glyph_match(target,result):
 			return False
 	return True
 
+#list of surfaces
+#screen: actual display that flip() redraws
+#counter: indicates glyph numbers: current and total
+#glyph: where the nodes and arcs appear (TODO: split up more)
+#kbhelp: optional key indicators, for debug mode
+#rbox: results page; individual text surfaces get blitted to it
+
+
 #use current display size to calculate node positions
 def init_nodes(width, height):
 	global node_pos
 	global spotsize, fontheight
 	global centre_x, centre_y
-	global kbhelp
+	global kbhelp, glyphsurf
+
+	glyphsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 
 	# leave border big enough for spot to overflow edge of hexagon
 	unit = 10 * height/22
@@ -715,8 +725,7 @@ def init_nodes(width, height):
 			label = helpfont.render(k,True,right)
 			kbhelp.blit(label,(p[0]+spotsize,p[1]))
 
-	blank()
-	pygame.display.flip()
+	clearglyph()
 
 #list of arcs in the current glyph
 arcs = []
@@ -727,28 +736,43 @@ sequence = []
 #list of currently-pressed nodes
 pressed = {}
 
-def blank():
-	global surface
+def refresh():
+	#clear the canvas
 	surface.lock()
 	surface.fill((0,0,0))
+	surface.unlock()
+
+	#draw each layer at a time
+	surface.blit(glyphsurf,(0,0))
+
+	if debug:
+		surface.blit(kbhelp,(0,0))
+
+	pygame.display.flip()
+
+def clearglyph():
+	global surface
+	glyphsurf.lock()
+	glyphsurf.fill((0,0,0,0))
 	w = (255,255,255)
 	for k,n in node_pos.items():
-		pygame.draw.circle(surface, w, n, spotsize, 1)
-	surface.unlock()
+		pygame.draw.circle(glyphsurf, w, n, spotsize, 1)
+	glyphsurf.unlock()
+	refresh()
 
 def light_node(node,rgba):
-	surface.lock()
-	pygame.draw.circle(surface, rgba, node_pos[node], spotsize, 0)
-	surface.unlock()
+	glyphsurf.lock()
+	pygame.draw.circle(glyphsurf, rgba, node_pos[node], spotsize, 0)
+	glyphsurf.unlock()
 
 def light_arc(start,end,rgba):
-	surface.lock()
-	pygame.draw.line(surface, rgba, node_pos[start], node_pos[end], spotsize)
-	surface.unlock()
+	glyphsurf.lock()
+	pygame.draw.line(glyphsurf, rgba, node_pos[start], node_pos[end], spotsize)
+	glyphsurf.unlock()
 	
 def drawglyph(arclist, rgba):
-	#erase screen
-	blank()
+	#erase glyph surface first
+	clearglyph()
 	#draw every arc, and highlight every node hit
 	for a in arclist:
 		light_arc(a[0], a[1], rgba)
@@ -770,7 +794,7 @@ def input(e):
 		if not pressed:
 			sequence.append(arcs)
 			arcs = []
-			blank()
+			clearglyph()
 	if e.type == pygame.KEYDOWN:
 		# only allow two keys at a time
 		if len(pressed) == 2:
@@ -794,10 +818,7 @@ def input(e):
 				#add the arc to the list
 				arcs.append(sort_pair([src,name]))
 				light_arc(src,name,beige)
-	#refresh display
-	if debug:
-		surface.blit(kbhelp,(0,0))
-	pygame.display.flip()
+	refresh()
 
 def main():
 	global surface
@@ -837,14 +858,13 @@ def main():
 	for glyphname in target_phrase:
 		arclist = glyph_dict[glyphname]
 		drawglyph(arclist, beige)
-		pygame.display.flip()
+		refresh()
 		pygame.event.pump()
 		pygame.time.wait(300)
 
-	blank()
+	clearglyph()
 	if debug:
 		surface.blit(kbhelp,(0,0))
-	pygame.display.flip()
 
 	needed = len(target_phrase)
 	#ignore anything entered during animation
@@ -854,6 +874,7 @@ def main():
 	pygame.event.set_allowed((pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP))
 	glyphing = True
 	while glyphing:
+		refresh()
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				quit()
