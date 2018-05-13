@@ -20,6 +20,7 @@
 import pygame
 import random
 import sys
+import math
 
 sc_height = 600
 sc_width = 800
@@ -685,9 +686,10 @@ def init_nodes(width, height):
 	global node_pos
 	global spotsize, fontheight
 	global centre_x, centre_y
-	global kbhelp, glyphsurf
+	global kbhelp, glyphsurf, countsurf
 
 	glyphsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
+	countsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 
 	# leave border big enough for spot to overflow edge of hexagon
 	unit = 10 * height/22
@@ -743,12 +745,46 @@ def refresh():
 	surface.unlock()
 
 	#draw each layer at a time
+	surface.blit(countsurf,(0,0))
 	surface.blit(glyphsurf,(0,0))
 
 	if debug:
 		surface.blit(kbhelp,(0,0))
 
 	pygame.display.flip()
+
+def progress(current):
+	countsurf.lock()
+	countsurf.fill((0,0,0,0))
+
+	#current = 0: yet to start
+	#current = n+1 : all done
+
+	if current and current<=needed:
+		#start at bottom and work round clockwise
+		#generate a polygon approximating the pie slice
+
+		#how smooth to draw the outside (needs to be multiple of 60)
+		circlepoints = 360
+
+		a1 = int((current-1) * circlepoints/needed)
+		a2 = int(current * circlepoints/needed)
+
+		r = 2/3*centre_y
+		print("sector {} to {}".format(a1,a2) )
+
+		#one at centre
+		polygon = [ (centre_x,centre_y) ]
+
+		for angle in range(a1,a2):
+			x=centre_x - int(r*math.sin (math.pi * 2 * angle/circlepoints) )
+			y=centre_y + int(r*math.cos (math.pi * 2 * angle/circlepoints) )
+			polygon.append( (x,y) )
+
+		pygame.draw.polygon( countsurf, (0,64,64), polygon, 3)
+		pygame.draw.polygon( countsurf, (0,32,32), polygon)
+
+	countsurf.unlock()
 
 def clearglyph():
 	global surface
@@ -795,6 +831,9 @@ def input(e):
 			sequence.append(arcs)
 			arcs = []
 			clearglyph()
+			#tell user which one they're about to start
+			if len(sequence) < needed:
+				progress(len(sequence)+1)
 	if e.type == pygame.KEYDOWN:
 		# only allow two keys at a time
 		if len(pressed) == 2:
@@ -821,7 +860,7 @@ def input(e):
 	refresh()
 
 def main():
-	global surface
+	global surface, needed
 	pygame.init()
 
 	pygame.display.set_caption("Glyph Hack")
@@ -854,25 +893,30 @@ def main():
 	target_list = sequence_dicts[requested]
 	target_phrase = target_list[random.randrange(len(target_list))]
 
+	needed = len(target_phrase)
+
 	#show glyphs
-	for glyphname in target_phrase:
+	for i in range(0,needed):
+		glyphname=target_phrase[i]
 		arclist = glyph_dict[glyphname]
 		drawglyph(arclist, beige)
+		progress(i+1)
 		refresh()
 		pygame.event.pump()
 		pygame.time.wait(300)
 
+	progress(0)
 	clearglyph()
 	if debug:
 		surface.blit(kbhelp,(0,0))
 
-	needed = len(target_phrase)
 	#ignore anything entered during animation
 
 	pygame.event.clear((pygame.KEYDOWN,pygame.KEYUP))
 	#read user input
 	pygame.event.set_allowed((pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP))
 	glyphing = True
+	progress(1)
 	while glyphing:
 		refresh()
 		for event in pygame.event.get():
