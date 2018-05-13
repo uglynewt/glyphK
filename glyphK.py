@@ -735,6 +735,9 @@ arcs = []
 #list of glyphs in entered sequence
 sequence = []
 
+#timestamps of start and finish
+times = [0]*5
+
 #list of currently-pressed nodes
 pressed = {}
 
@@ -818,6 +821,9 @@ def drawglyph(arclist, rgba):
 		
 def input(e):
 	global pressed, arcs, sequence
+
+	glyphsdone = len(sequence)
+
 	if e.type == pygame.KEYUP:
 		# remove key from pressed list
 		key = e.key
@@ -829,12 +835,14 @@ def input(e):
 			return
 		#if list now empty, end glyph
 		if not pressed:
+			times[glyphsdone][1] = pygame.time.get_ticks()
 			sequence.append(arcs)
+			glyphsdone = len(sequence)
 			arcs = []
 			clearglyph()
 			#tell user which one they're about to start
-			if len(sequence) < needed:
-				progress(len(sequence)+1)
+			if glyphsdone < needed:
+				progress(glyphsdone+1)
 	if e.type == pygame.KEYDOWN:
 		# only allow two keys at a time
 		if len(pressed) == 2:
@@ -850,6 +858,11 @@ def input(e):
 		# add to currently-pressed list
 		pressed[key] = name
 		light_node(name,beige)
+
+		#new glyph, start timer
+		if len(pressed) == 1:
+			times[glyphsdone] = [ pygame.time.get_ticks() , 0 ]
+
 		# create arc to any other pressed nodes
 		for k,src in pressed.items():
 			if src==name:
@@ -937,37 +950,56 @@ def main():
 
 	#check how much space the results will take
 	rwidth=0
+	twidth=0
 	rheight=0
 	for n in range(0,needed):
+		#first column: glyph name
 		name = target_phrase[n]
 		box = rfont.size(name)
 		if rwidth < box[0]:
 			rwidth=box[0]
-		rheight += box[1]
+
+		#second column: times (when correct)
+		ms = (times[n][1] - times[n][0])/1000
+		tbox = rfont.size("  {:.2f}s".format(ms))
+		if twidth < tbox[0]:
+			twidth=tbox[0]
+
+		#vertically
+		if box[1] > tbox[1]:
+			rheight += box[1]
+		else:
+			rheight += tbox[1]
 
 	#now make a big enough box and write each line into it
-	rbox = pygame.Surface((rwidth,rheight))
+	rbox = pygame.Surface((rwidth+twidth,rheight))
 	rbox.fill((0,0,0))
 	ry = 0
 	for n in range(0,needed):
 		name = target_phrase[n]
 		target_arcs = glyph_dict[name]
 		if glyph_match(target_arcs, sequence[n]):
+			ms = (times[n][1] - times[n][0])/1000
 			if debug:
-				print("{} : correct".format(name))
+				print("{} : correct, {:.2f}s".format(name,ms))
 			rcol = right
 		else:
+			ms = 0
 			if debug:
 				print("{} : wrong".format(name))
 			rcol = wrong
 		rline = rfont.render(name,True,rcol)
 		rbox.blit(rline, (0, ry) )
+		#display times next to correct glyphs
+		if ms:
+			tline=rfont.render("  {:.2f}s".format(ms),True,rcol)
+			rbox.blit(tline, (rwidth,ry))
 		ry += rline.get_size()[1]
 
 	surface.lock()
 	surface.fill((0,0,0))
 	surface.unlock()
-	surface.blit(rbox, (int(centre_x - rwidth/2), int(centre_y - rheight/2)) )
+	surface.blit(rbox, (int(centre_x - (rwidth+twidth)/2), int(centre_y - rheight/2)) )
 	pygame.display.flip()
 	pygame.event.pump()
 
