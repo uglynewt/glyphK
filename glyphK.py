@@ -771,7 +771,8 @@ def progress(current):
 		a2 = int(current * circlepoints/needed)
 
 		r = 2/3*centre_y
-		print("sector {} to {}".format(a1,a2) )
+		if debug:
+			print("sector {} to {}".format(a1,a2) )
 
 		#one at centre
 		polygon = [ (centre_x,centre_y) ]
