@@ -677,6 +677,7 @@ def glyph_match(target,result):
 #screen: actual display that flip() redraws
 #counter: indicates glyph numbers: current and total
 #glyph: where the nodes and arcs appear (TODO: split up more)
+#halo: highlight the currently-pressed nodes
 #kbhelp: optional key indicators, for debug mode
 #rbox: results page; individual text surfaces get blitted to it
 
@@ -686,10 +687,11 @@ def init_nodes(width, height):
 	global node_pos
 	global spotsize, fontheight
 	global centre_x, centre_y
-	global kbhelp, glyphsurf, countsurf
+	global kbhelp, glyphsurf, countsurf, halo
 
 	glyphsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 	countsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
+	halo = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 
 	# leave border big enough for spot to overflow edge of hexagon
 	unit = 10 * height/22
@@ -750,6 +752,7 @@ def refresh():
 	#draw each layer at a time
 	surface.blit(countsurf,(0,0))
 	surface.blit(glyphsurf,(0,0))
+	surface.blit(halo,(0,0))
 
 	if debug:
 		surface.blit(kbhelp,(0,0))
@@ -789,6 +792,24 @@ def progress(current):
 		pygame.draw.polygon( countsurf, (0,32,32), polygon)
 
 	countsurf.unlock()
+
+#draw a halo around each pressed node
+def haloes():
+	#refresh and start over
+	halo.lock()
+	halo.fill((0,0,0,0))
+
+	rgba = (255,255,255)
+
+	#ring needs to go around the node; circle+width makes lots of hoops,
+	#smoother fill by drawing a big circle then erasing a smaller one
+	outer = int(spotsize*2.5)
+	inner = int(spotsize*1.25)
+
+	for p in pressed.values():
+		pygame.draw.circle(halo, rgba, node_pos[p], outer, 0)
+		pygame.draw.circle(halo, (0,0,0,0), node_pos[p], inner, 0)
+	halo.unlock()
 
 def clearglyph():
 	global surface
@@ -830,6 +851,7 @@ def input(e):
 		if key in pressed:
 			name = pressed[key]
 			del pressed[key]
+			haloes()
 		else:
 			#key wasn't for a (pressed) node, ignore
 			return
@@ -858,6 +880,7 @@ def input(e):
 		# add to currently-pressed list
 		pressed[key] = name
 		light_node(name,beige)
+		haloes()
 
 		#new glyph, start timer
 		if len(pressed) == 1:
