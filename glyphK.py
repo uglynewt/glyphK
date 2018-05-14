@@ -773,14 +773,14 @@ def progress(current):
 		a1 = int((current-1) * circlepoints/needed)
 		a2 = int(current * circlepoints/needed)
 
-		r = 2/3*centre_y
+		r = centre_y*2/3
 		if debug:
 			print("sector {} to {}".format(a1,a2) )
 
 		#one at centre
 		polygon = [ (centre_x,centre_y) ]
 
-		for angle in range(a1,a2):
+		for angle in range(a1,a2+1):
 			x=centre_x - int(r*math.sin (math.pi * 2 * angle/circlepoints) )
 			y=centre_y + int(r*math.cos (math.pi * 2 * angle/circlepoints) )
 			polygon.append( (x,y) )
