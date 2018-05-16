@@ -22,6 +22,7 @@ import random
 import getopt
 import sys
 import math
+import requests
 
 sc_height = 600
 sc_width = 800
@@ -901,12 +902,13 @@ def input(e):
 	refresh()
 
 def read_options():
-	global requested, level, debug, showkeys
+	global requested, level, debug, showkeys, url
 	requested = 0
 	level = 0
+	url = ''
 	debug = False
 	showkeys = False
-	opts, args = getopt.getopt(sys.argv[1:],"g:kl:v")
+	opts, args = getopt.getopt(sys.argv[1:],"g:kl:u:v")
 	for o,a in opts:
 		if o == '-g':
 			requested=int(a)
@@ -914,11 +916,13 @@ def read_options():
 			showkeys=True
 		if o == '-l':
 			level=int(a)
+		elif o == '-u':
+			url=a
 		elif o == '-v':
 			debug=True
 
 def main():
-	global surface, needed, requested
+	global surface, needed, requested, level
 	pygame.init()
 
 	pygame.display.set_caption("Glyph Hack")
@@ -946,6 +950,17 @@ def main():
 					waiting = False
 		pygame.time.wait(33)
 
+	if url:
+		if debug:
+			print("querying Tecthulhu...")
+		r = requests.get(url)
+		if r.status_code != 200:
+			print("Error {} retrieving url {}".format(r.status_code,url))
+			quit()
+		j = r.json()
+		level = j['result']['level']
+		if debug:
+			print("portal level {}".format(level))
 	if level:
 		if level > len(glyphcount) or level<1:
 			print("Unexpected portal level {}".format(level))
