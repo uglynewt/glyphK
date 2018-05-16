@@ -653,6 +653,9 @@ glyph_dict = {
 	' ' : []
 	}
 
+#mapping from portal level to number of glyphs
+glyphcount = [ 1,2,3,3,3,4,4,5]
+
 #rearrange arc so nodes appear in ascending order
 def sort_pair(a):
 	if a[0] > a[1]:
@@ -898,16 +901,19 @@ def input(e):
 	refresh()
 
 def read_options():
-	global requested, debug, showkeys
+	global requested, level, debug, showkeys
 	requested = 0
+	level = 0
 	debug = False
 	showkeys = False
-	opts, args = getopt.getopt(sys.argv[1:],"g:kv")
+	opts, args = getopt.getopt(sys.argv[1:],"g:kl:v")
 	for o,a in opts:
 		if o == '-g':
 			requested=int(a)
 		elif o == '-k':
 			showkeys=True
+		if o == '-l':
+			level=int(a)
 		elif o == '-v':
 			debug=True
 
@@ -940,6 +946,11 @@ def main():
 					waiting = False
 		pygame.time.wait(33)
 
+	if level:
+		if level > len(glyphcount) or level<1:
+			print("Unexpected portal level {}".format(level))
+			quit()
+		requested = glyphcount[level-1]
 	if not requested:
 		requested = random.randint(1,5)
 	target_list = sequence_dicts[requested]
