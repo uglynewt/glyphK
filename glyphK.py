@@ -19,6 +19,7 @@
 
 import pygame
 import random
+import getopt
 import sys
 import math
 
@@ -722,7 +723,7 @@ def init_nodes(width, height):
 	}
 
 	#show the glyph names to help keyboard users
-	if debug:
+	if showkeys:
 		kbhelp = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 		helpfont = pygame.font.Font(None,int(spotsize*1.5))
 		for k,p in node_pos.items():
@@ -754,7 +755,7 @@ def refresh():
 	surface.blit(glyphsurf,(0,0))
 	surface.blit(halo,(0,0))
 
-	if debug:
+	if showkeys:
 		surface.blit(kbhelp,(0,0))
 
 	pygame.display.flip()
@@ -896,11 +897,27 @@ def input(e):
 				light_arc(src,name,beige)
 	refresh()
 
+def read_options():
+	global requested, debug, showkeys
+	requested = 0
+	debug = False
+	showkeys = False
+	opts, args = getopt.getopt(sys.argv[1:],"g:kv")
+	for o,a in opts:
+		if o == '-g':
+			requested=int(a)
+		elif o == '-k':
+			showkeys=True
+		elif o == '-v':
+			debug=True
+
 def main():
-	global surface, needed
+	global surface, needed, requested
 	pygame.init()
 
 	pygame.display.set_caption("Glyph Hack")
+
+	read_options()
 
 	screen = pygame.display.set_mode((sc_width,sc_height))
 	surface = screen
@@ -923,9 +940,7 @@ def main():
 					waiting = False
 		pygame.time.wait(33)
 
-	if len(sys.argv) > 1:
-		requested = int(sys.argv[1])
-	else:
+	if not requested:
 		requested = random.randint(1,5)
 	target_list = sequence_dicts[requested]
 	target_phrase = target_list[random.randrange(len(target_list))]
@@ -944,7 +959,7 @@ def main():
 
 	progress(0)
 	clearglyph()
-	if debug:
+	if showkeys:
 		surface.blit(kbhelp,(0,0))
 
 	#ignore anything entered during animation
@@ -1028,7 +1043,6 @@ def main():
 
 	pygame.time.wait(2000)
 
+
 if __name__ == '__main__':
-	global debug
-	debug = True
 	main()
