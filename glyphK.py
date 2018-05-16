@@ -962,10 +962,13 @@ def main():
 		if debug:
 			print("portal level {}".format(level))
 	if level:
-		if level > len(glyphcount) or level<1:
+		if level == 0:
+			requested = glyphcount[level]
+		elif level <= len(glyphcount) and level > 0:
+			requested = glyphcount[level-1]
+		else:
 			print("Unexpected portal level {}".format(level))
 			quit()
-		requested = glyphcount[level-1]
 	if not requested:
 		requested = random.randint(1,5)
 	target_list = sequence_dicts[requested]
