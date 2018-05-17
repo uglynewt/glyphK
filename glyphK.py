@@ -247,7 +247,7 @@ sequence_dicts = {
 		 [ 'TECHNOLOGY', 'CAPTURE', 'VICTORY'],
 		 [ 'TOGETHER', 'END', 'MYSTERY'],
 		 [ 'WAR', 'DESTROY', 'FUTURE'],
-		 [ 'XM', 'GROW', 'CREATIVITY(1216274548597A9A)'],
+		 [ 'XM', 'GROW', 'CREATIVITY'],
 		 [ 'XM', 'NOURISH', 'CIVILIZATION'],
 		 [ 'YOU', 'HIDE', 'CHAOS']
 	],
