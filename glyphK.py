@@ -1024,7 +1024,7 @@ def main():
 			rwidth=box[0]
 
 		#second column: times (when correct)
-		ms = (times[n][1] - times[n][0])/1000
+		ms = float(times[n][1] - times[n][0])/1000
 		tbox = rfont.size("  {:.2f}s".format(ms))
 		if twidth < tbox[0]:
 			twidth=tbox[0]
@@ -1043,7 +1043,7 @@ def main():
 		name = target_phrase[n]
 		target_arcs = glyph_dict[name]
 		if glyph_match(target_arcs, sequence[n]):
-			ms = (times[n][1] - times[n][0])/1000
+			ms = float(times[n][1] - times[n][0])/1000
 			if debug:
 				print("{} : correct, {:.2f}s".format(name,ms))
 			rcol = right
