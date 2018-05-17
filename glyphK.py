@@ -872,11 +872,31 @@ def input(e):
 			if glyphsdone < needed:
 				progress(glyphsdone+1)
 	if e.type == pygame.KEYDOWN:
+		key = e.key
+
+		if key == pygame.K_BACKSPACE:
+			if pressed:
+				#mid-glyph, reset it
+				if debug:
+					print("abandoning current glyph")
+				pressed = {}
+				arcs = []
+			elif sequence:
+				#between glyphs, undo previous
+				if debug:
+					print("abandoning previous glyph")
+				del sequence[-1]
+				glyphsdone = len(sequence)
+				progress(glyphsdone+1)
+			clearglyph()
+			haloes()
+			refresh()
+			return
+
 		# only allow two keys at a time
 		if len(pressed) == 2:
 			return
 
-		key = e.key
 		name = e.unicode
 		if name not in node_pos:
 			#key not a node
