@@ -678,12 +678,15 @@ def glyph_match(target,result):
 			return False
 	return True
 
-#list of surfaces
+#list of surfaces to be combined during refresh()
 #screen: actual display that flip() redraws
 #counter: indicates glyph numbers: current and total
 #glyph: where the nodes and arcs appear (TODO: split up more)
 #halo: highlight the currently-pressed nodes
 #kbhelp: optional key indicators, for debug mode
+#msg: messages ("incoming glyph")
+
+#other surfaces
 #rbox: results page; individual text surfaces get blitted to it
 
 
@@ -692,11 +695,12 @@ def init_nodes(width, height):
 	global node_pos
 	global spotsize, fontheight
 	global centre_x, centre_y
-	global kbhelp, glyphsurf, countsurf, halo
+	global kbhelp, glyphsurf, countsurf, halo, msgsurf
 
 	glyphsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 	countsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 	halo = pygame.Surface((width,height),flags=pygame.SRCALPHA)
+	msgsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 
 	# leave border big enough for spot to overflow edge of hexagon
 	unit = 10 * height/22
@@ -758,6 +762,7 @@ def refresh():
 	surface.blit(countsurf,(0,0))
 	surface.blit(glyphsurf,(0,0))
 	surface.blit(halo,(0,0))
+	surface.blit(msgsurf,(0,0))
 
 	if showkeys:
 		surface.blit(kbhelp,(0,0))
@@ -797,6 +802,19 @@ def progress(current):
 		pygame.draw.polygon( countsurf, (0,32,32), polygon)
 
 	countsurf.unlock()
+
+#takes string and colour; returns a box holding it
+#with black bg and a frame
+def msgbox(string,rgba):
+	mfont = pygame.font.Font(None,int(fontheight))
+	ibox = mfont.render(string,True,rgba)
+	ix,iy = ibox.get_size()
+	box = pygame.Surface((ix+6,iy+6))
+	box.fill((0,0,0))
+	box.blit(ibox,(3,3))
+	pygame.draw.rect(box,rgba,(0,0,ix+6,iy+6),3)
+
+	return box
 
 #draw a halo around each pressed node
 def haloes():
@@ -998,6 +1016,22 @@ def main():
 	target_phrase = target_list[random.randrange(len(target_list))]
 
 	needed = len(target_phrase)
+
+	#count user in with "incoming" message
+	mbox = msgbox("INCOMING GLYPH SEQUENCE",(128,128,64))
+	mx,my = mbox.get_size()
+
+	for i in range(3):
+		msgsurf.fill((0,0,0,0))
+		msgsurf.blit(mbox, (centre_x - mx/2, centre_y - 2*my) )
+		refresh()
+		pygame.event.pump()
+		pygame.time.wait(int(delay*3/4))
+
+		msgsurf.fill((0,0,0,0))
+		refresh()
+		pygame.event.pump()
+		pygame.time.wait(int(delay*1/4))
 
 	#show glyphs
 	for i in range(0,needed):
