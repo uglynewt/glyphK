@@ -655,7 +655,8 @@ glyph_dict = {
 	}
 
 #mapping from portal level to number of glyphs
-glyphcount = [ 1,2,3,3,3,4,4,5]
+#0-based (Tecthulhu returns 0 for neutral portals)
+glyphcount = [ 1,1,2,3,3,3,4,4,5 ]
 
 #rearrange arc so nodes appear in ascending order
 def sort_pair(a):
@@ -904,7 +905,7 @@ def input(e):
 def read_options():
 	global requested, level, debug, showkeys, url
 	requested = 0
-	level = 0
+	level = None
 	url = ''
 	debug = False
 	showkeys = False
@@ -961,11 +962,12 @@ def main():
 		level = j['result']['level']
 		if debug:
 			print("portal level {}".format(level))
-	if level:
-		if level > len(glyphcount) or level<1:
+	if level is not None:
+		if 0<=level<=8:
+			requested = glyphcount[level]
+		else:
 			print("Unexpected portal level {}".format(level))
 			quit()
-		requested = glyphcount[level-1]
 	if not requested:
 		requested = random.randint(1,5)
 	target_list = sequence_dicts[requested]
