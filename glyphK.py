@@ -922,19 +922,24 @@ def input(e):
 	refresh()
 
 def read_options():
-	global requested, level, debug, showkeys, url
+	global requested, delay, level, debug, showkeys, url
 	requested = 0
 	level = None
 	url = ''
 	debug = False
 	showkeys = False
-	opts, args = getopt.getopt(sys.argv[1:],"g:kl:u:v")
+	delay = 1000
+	opts, args = getopt.getopt(sys.argv[1:],"cg:kl:su:v")
 	for o,a in opts:
 		if o == '-g':
 			requested=int(a)
 		elif o == '-k':
 			showkeys=True
-		if o == '-l':
+		elif o == '-c':
+			delay = 300
+		elif o == '-s':
+			delay = 2000
+		elif o == '-l':
 			level=int(a)
 		elif o == '-u':
 			url=a
@@ -1002,7 +1007,7 @@ def main():
 		progress(i+1)
 		refresh()
 		pygame.event.pump()
-		pygame.time.wait(300)
+		pygame.time.wait(delay)
 
 	progress(0)
 	clearglyph()
