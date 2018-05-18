@@ -743,12 +743,6 @@ def init_nodes(width, height):
 #list of arcs in the current glyph
 arcs = []
 
-#list of glyphs in entered sequence
-sequence = []
-
-#timestamps of start and finish
-times = [0]*5
-
 #list of currently-pressed nodes
 pressed = {}
 
@@ -964,23 +958,15 @@ def read_options():
 		elif o == '-v':
 			debug=True
 
-def main():
-	global surface, needed, requested, level
-	pygame.init()
-
-	pygame.display.set_caption("Glyph Hack")
-
-	read_options()
-
-	screen = pygame.display.set_mode((sc_width,sc_height))
-	surface = screen
-
-	init_nodes(sc_width, sc_height)
+def gameloop():
+	global needed, requested, level
+	global sequence, times
 
 	waiting = True
 	#await start signal (or screen resize)
 	pygame.event.set_allowed((pygame.QUIT, pygame.KEYDOWN, pygame.VIDEORESIZE))
 	while waiting:
+		refresh()
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				quit()
@@ -1054,6 +1040,8 @@ def main():
 	#read user input
 	pygame.event.set_allowed((pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP))
 	glyphing = True
+	sequence = []
+	times = [0]*5
 	progress(1)
 	while glyphing:
 		refresh()
@@ -1066,6 +1054,8 @@ def main():
 		if len(sequence) == needed:
 			glyphing = False
 		pygame.time.wait(33)
+
+	progress(0)
 
 	if debug:
 		print("checking results")
@@ -1129,6 +1119,22 @@ def main():
 
 	pygame.time.wait(2000)
 
+
+def main():
+	global surface
+	pygame.init()
+
+	pygame.display.set_caption("Glyph Hack")
+
+	read_options()
+
+	screen = pygame.display.set_mode((sc_width,sc_height))
+	surface = screen
+
+	init_nodes(sc_width, sc_height)
+
+	while True:
+		gameloop()
 
 if __name__ == '__main__':
 	main()
