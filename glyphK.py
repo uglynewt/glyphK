@@ -959,7 +959,7 @@ def read_options():
 			debug=True
 
 def gameloop():
-	global needed, requested, level
+	global needed, level
 	global sequence, times
 
 	waiting = True
@@ -992,16 +992,18 @@ def gameloop():
 			print("portal level {}".format(level))
 	if level is not None:
 		if 0<=level<=8:
-			requested = glyphcount[level]
+			numglyphs = glyphcount[level]
 		else:
 			print("Unexpected portal level {}".format(level))
 			quit()
-	if not requested:
-		requested = random.randint(1,5)
-	target_list = sequence_dicts[requested]
+	elif requested:
+		numglyphs = requested
+	else:
+		numglyphs = random.randint(1,5)
+	target_list = sequence_dicts[numglyphs]
 	target_phrase = target_list[random.randrange(len(target_list))]
 
-	needed = len(target_phrase)
+	needed = numglyphs
 
 	#count user in with "incoming" message
 	mbox = msgbox("INCOMING GLYPH SEQUENCE",(128,128,64))
