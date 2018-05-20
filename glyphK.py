@@ -973,6 +973,20 @@ def input(e):
 				light_arc(src,node,beige)
 	refresh()
 
+def usage():
+	print("Usage:")
+	print("{} <options>".format(sys.argv[0]))
+	print("")
+	print("	-c       : complex hack")
+	print("	-g <num> : set length of glyph sequence")
+	print("	-h       : show this message")
+	print("	-k       : display key bindings on screen")
+	print("	-l <num> : set hack level")
+	print("	-s       : simple hack")
+	print("	-u <url> : URL to query for portal information")
+	print("	-v       : verbose (misc debugging messages)")
+	quit()
+
 def read_options():
 	global requested, delay, level, debug, showkeys, url
 	requested = 0
@@ -981,10 +995,12 @@ def read_options():
 	debug = False
 	showkeys = False
 	delay = 1000
-	opts, args = getopt.getopt(sys.argv[1:],"cg:kl:su:v")
+	opts, args = getopt.getopt(sys.argv[1:],"cg:hkl:su:v")
 	for o,a in opts:
 		if o == '-g':
 			requested=int(a)
+		elif o == '-h':
+			usage()
 		elif o == '-k':
 			showkeys=True
 		elif o == '-c':
