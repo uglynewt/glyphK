@@ -695,7 +695,8 @@ def glyph_match(target,result):
 #list of surfaces to be combined during refresh()
 #screen: actual display that flip() redraws
 #counter: indicates glyph numbers: current and total
-#glyph: where the nodes and arcs appear (TODO: split up more)
+#spots: the circles for each node
+#glyph: where the lines of the glyph appear
 #halo: highlight the currently-pressed nodes
 #kbhelp: optional key indicators, for debug mode
 #msg: messages ("incoming glyph")
@@ -737,9 +738,10 @@ def init_screen(width, height):
 	global node_pos
 	global spotsize, fontheight
 	global centre_x, centre_y
-	global kbhelp, glyphsurf, countsurf, halo, msgsurf
+	global kbhelp, spotsurf, glyphsurf, countsurf, halo, msgsurf
 
 	glyphsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
+	spotsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 	countsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 	halo = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 	msgsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
@@ -755,6 +757,14 @@ def init_screen(width, height):
 	node_pos = [0]*11
 	init_nodes(glyphsurf, node_pos)
 
+	#draw the spots
+	spotsurf.lock()
+	spotsurf.fill((0,0,0,0))
+	w = (255,255,255)
+	for n in node_pos:
+		pygame.draw.circle(spotsurf, w, n, spotsize, 1)
+	spotsurf.unlock()
+
 	#show the glyph names to help keyboard users
 	if showkeys:
 		kbhelp = pygame.Surface((width,height),flags=pygame.SRCALPHA)
@@ -762,8 +772,6 @@ def init_screen(width, height):
 		for k in range(11):
 			label = helpfont.render(node_keys[k],True,right)
 			kbhelp.blit(label,(node_pos[k][0]+spotsize,node_pos[k][1]))
-
-	clearglyph()
 
 def refresh():
 	#clear the canvas
@@ -773,6 +781,7 @@ def refresh():
 
 	#draw each layer at a time
 	surface.blit(countsurf,(0,0))
+	surface.blit(spotsurf,(0,0))
 	surface.blit(glyphsurf,(0,0))
 	surface.blit(halo,(0,0))
 	surface.blit(msgsurf,(0,0))
@@ -848,14 +857,9 @@ def haloes():
 	halo.unlock()
 
 def clearglyph():
-	global surface
 	glyphsurf.lock()
 	glyphsurf.fill((0,0,0,0))
-	w = (255,255,255)
-	for n in node_pos:
-		pygame.draw.circle(glyphsurf, w, n, spotsize, 1)
 	glyphsurf.unlock()
-	refresh()
 
 def light_node(node,rgba):
 	glyphsurf.lock()
