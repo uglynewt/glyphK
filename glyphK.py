@@ -692,6 +692,13 @@ def glyph_match(target,result):
 			return False
 	return True
 
+def init_sounds():
+	global press,release
+	pygame.mixer.init()
+
+	press = pygame.mixer.Sound("sounds/down.wav")
+	release = pygame.mixer.Sound("sounds/up.wav")
+
 #list of surfaces to be combined during refresh()
 #screen: actual display that flip() redraws
 #counter: indicates glyph numbers: current and total
@@ -899,6 +906,7 @@ def input(e):
 		if key in pressed:
 			del pressed[key]
 			haloes()
+			release.play()
 		else:
 			#key wasn't for a (pressed) node, ignore
 			return
@@ -949,6 +957,7 @@ def input(e):
 		pressed[e.key] = node
 		light_node(node,beige)
 		haloes()
+		press.play()
 
 		#new glyph, start timer
 		if len(pressed) == 1:
@@ -1160,6 +1169,8 @@ def gameloop():
 
 def main():
 	global surface
+
+	pygame.mixer.pre_init(22050,-16,1,256)
 	pygame.init()
 
 	pygame.display.set_caption("Glyph Hack")
@@ -1169,6 +1180,7 @@ def main():
 	screen = pygame.display.set_mode((sc_width,sc_height))
 	surface = screen
 
+	init_sounds()
 	init_screen(sc_width, sc_height)
 
 	while True:
