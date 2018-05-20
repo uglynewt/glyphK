@@ -879,7 +879,15 @@ def drawglyph(arclist, rgba):
 		light_arc(a[0], a[1], rgba)
 		light_node(a[0],rgba)
 		light_node(a[1],rgba)
-		
+
+def miniglyph(arclist, rgba, surface, np):
+	surface.lock()
+	surface.fill((0,0,0,0))
+	#TODO surrounding hexagon
+	for a in arclist:
+		pygame.draw.line(surface, rgba, np[a[0]], np[a[1]], 4)
+	surface.unlock()
+
 def input(e):
 	global pressed, arcs, sequence
 
@@ -1090,7 +1098,7 @@ def gameloop():
 	#check how much space the results will take
 	rwidth=0
 	twidth=0
-	rheight=0
+	rheight=needed*fontheight
 	for n in range(0,needed):
 		#first column: glyph name
 		name = target_phrase[n]
@@ -1104,14 +1112,14 @@ def gameloop():
 		if twidth < tbox[0]:
 			twidth=tbox[0]
 
-		#vertically
-		if box[1] > tbox[1]:
-			rheight += box[1]
-		else:
-			rheight += tbox[1]
+	#miniature glyph on left
+	miniwidth = int(fontheight * 1.4)
+	minisurf = pygame.Surface((miniwidth,fontheight))
+	mp = [0]*11
+	init_nodes(minisurf,mp)
 
 	#now make a big enough box and write each line into it
-	rbox = pygame.Surface((rwidth+twidth,rheight))
+	rbox = pygame.Surface((rwidth+twidth+miniwidth,rheight))
 	rbox.fill((0,0,0))
 	ry = 0
 	for n in range(0,needed):
@@ -1127,20 +1135,25 @@ def gameloop():
 			if debug:
 				print("{} : wrong".format(name))
 			rcol = wrong
+		miniglyph(target_arcs,rcol, minisurf, mp)
+		rbox.blit(minisurf, (0,ry))
 		rline = rfont.render(name,True,rcol)
-		rbox.blit(rline, (0, ry) )
+		lineoffset = int( (fontheight - rline.get_height())/2)
+		rbox.blit(rline, (miniwidth, ry+lineoffset) )
 		#display times next to correct glyphs
 		if ms:
 			tline=rfont.render("  {:.2f}s".format(ms),True,rcol)
-			rbox.blit(tline, (rwidth,ry))
-		ry += rline.get_size()[1]
+			rbox.blit(tline, (miniwidth+rwidth,ry+lineoffset))
+		ry += fontheight
 
-	surface.lock()
-	surface.fill((0,0,0))
-	surface.unlock()
-	surface.blit(rbox, (int(centre_x - (rwidth+twidth)/2), int(centre_y - rheight/2)) )
-	pygame.display.flip()
-	pygame.event.pump()
+		surface.lock()
+		surface.fill((0,0,0))
+		surface.unlock()
+		surface.blit(rbox, (int(centre_x - (rwidth+twidth+miniwidth)/2), int(centre_y - rheight/2)) )
+		pygame.display.flip()
+		pygame.event.pump()
+
+		pygame.time.wait(delay)
 
 	pygame.time.wait(2000)
 
