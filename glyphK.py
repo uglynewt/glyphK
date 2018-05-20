@@ -662,6 +662,15 @@ glyphcount = [ 1,1,2,3,3,3,4,4,5 ]
 # shown on screen by kbhelp
 node_keys = [ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a' ]
 
+
+#list of arcs in the current glyph
+arcs = []
+
+#dictionary of currently-pressed nodes
+#key = "key" member of events (keydown and keyup)
+#value = node number; index into node_pos
+pressed = {}
+
 #rearrange arc so nodes appear in ascending order
 def sort_pair(a):
 	if a[0] > a[1]:
@@ -695,8 +704,36 @@ def glyph_match(target,result):
 #rbox: results page; individual text surfaces get blitted to it
 
 
-#use current display size to calculate node positions
-def init_nodes(width, height):
+#calculate node positions to fit within the provided surface
+def init_nodes(surf, np):
+	width,height = surf.get_size()
+
+	if width > height:
+		unit = 10 * height/22
+	else:
+		unit = 10 * width/22
+
+	cx = width/2
+	cy = height/2
+
+	# sides of half-triangle
+	dx = unit * 0.866 # sin 60
+	dy = unit/2
+
+	np[0] = (int(cx), int(cy - unit ))
+	np[1] = (int(cx + dx), int(cy - dy ))
+	np[2] = (int(cx + dx), int(cy + dy ))
+	np[3] = (int(cx), int(cy + unit ))
+	np[4] = (int(cx - dx), int(cy + dy ))
+	np[5] = (int(cx - dx), int(cy - dy ))
+	np[6] = (int(cx + dx/2), int(cy - dy/2 ))
+	np[7] = (int(cx + dx/2), int(cy + dy/2 ))
+	np[8] = (int(cx - dx/2), int(cy + dy/2 ))
+	np[9] = (int(cx - dx/2), int(cy - dy/2 ))
+	np[10] = (int(cx), int(cy ))
+
+
+def init_screen(width, height):
 	global node_pos
 	global spotsize, fontheight
 	global centre_x, centre_y
@@ -707,33 +744,16 @@ def init_nodes(width, height):
 	halo = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 	msgsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 
-	# leave border big enough for spot to overflow edge of hexagon
-	unit = 10 * height/22
-	spotsize = int(unit/20)
-
-	# sides of half-triangle
-	dx = unit * 0.866 # sin 60
-	dy = unit/2
-
 	centre_x = width/2
 	centre_y = height/2
 
 	#suitably sized boxes for results
 	fontheight = height/8
 
-	node_pos = [
-		[int(centre_x), int(centre_y - unit )],
-		[int(centre_x + dx), int(centre_y - dy )],
-		[int(centre_x + dx), int(centre_y + dy )],
-		[int(centre_x), int(centre_y + unit )],
-		[int(centre_x - dx), int(centre_y + dy )],
-		[int(centre_x - dx), int(centre_y - dy )],
-		[int(centre_x + dx/2), int(centre_y - dy/2 )],
-		[int(centre_x + dx/2), int(centre_y + dy/2 )],
-		[int(centre_x - dx/2), int(centre_y + dy/2 )],
-		[int(centre_x - dx/2), int(centre_y - dy/2 )],
-		[int(centre_x), int(centre_y )]
-	]
+	spotsize = int(height/44)
+
+	node_pos = [0]*11
+	init_nodes(glyphsurf, node_pos)
 
 	#show the glyph names to help keyboard users
 	if showkeys:
@@ -744,14 +764,6 @@ def init_nodes(width, height):
 			kbhelp.blit(label,(node_pos[k][0]+spotsize,node_pos[k][1]))
 
 	clearglyph()
-
-#list of arcs in the current glyph
-arcs = []
-
-#dictionary of currently-pressed nodes
-#key = "key" member of events (keydown and keyup)
-#value = node number; index into node_pos
-pressed = {}
 
 def refresh():
 	#clear the canvas
@@ -979,7 +991,7 @@ def gameloop():
 				quit()
 			if event.type == pygame.VIDEORESIZE:
 				screen = pygame.display.set_mode((event.size))
-				init_nodes(event.w, event.h)
+				init_screen(event.w, event.h)
 			if event.type == pygame.KEYDOWN:
 				#start when pad pressed
 				if event.unicode in node_keys:
@@ -1140,7 +1152,7 @@ def main():
 	screen = pygame.display.set_mode((sc_width,sc_height))
 	surface = screen
 
-	init_nodes(sc_width, sc_height)
+	init_screen(sc_width, sc_height)
 
 	while True:
 		gameloop()
