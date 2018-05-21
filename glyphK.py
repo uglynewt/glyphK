@@ -973,6 +973,43 @@ def input(e):
 				light_arc(src,node,beige)
 	refresh()
 
+#simple input mode for testing pad
+def padtest():
+	pygame.event.set_allowed((pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP, pygame.VIDEORESIZE))
+	#render message now, blit it when required
+	mbox = msgbox("REDO",(128,128,64))
+	mx,my = mbox.get_size()
+
+	while True:
+		refresh()
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				quit()
+			if event.type == pygame.VIDEORESIZE:
+				screen = pygame.display.set_mode((event.size))
+				init_screen(event.w, event.h)
+			if event.type == pygame.KEYDOWN:
+				#start when pad pressed
+				if event.unicode in node_keys:
+					node = node_keys.index(event.unicode)
+					pressed[event.key] = node
+					haloes()
+				elif event.key == pygame.K_BACKSPACE:
+					msgsurf.blit(mbox,(int(centre_x-mx/2),int(centre_y-2*my)))
+				press.play()
+			if event.type == pygame.KEYUP:
+				# remove key from pressed list
+				key = event.key
+				if key in pressed:
+					del pressed[key]
+					haloes()
+				elif key == pygame.K_BACKSPACE:
+					msgsurf.fill((0,0,0,0))
+				release.play()
+		refresh()
+		pygame.time.wait(33)
+
+
 def usage():
 	print("Usage:")
 	print("{} <options>".format(sys.argv[0]))
@@ -982,20 +1019,22 @@ def usage():
 	print("	-h       : show this message")
 	print("	-k       : display key bindings on screen")
 	print("	-l <num> : set hack level")
+	print("	-p       : pad test mode")
 	print("	-s       : simple hack")
 	print("	-u <url> : URL to query for portal information")
 	print("	-v       : verbose (misc debugging messages)")
 	quit()
 
 def read_options():
-	global requested, delay, level, debug, showkeys, url
+	global requested, delay, level, debug, showkeys, url, testpad
 	requested = 0
 	level = None
 	url = ''
 	debug = False
 	showkeys = False
+	testpad = False
 	delay = 1000
-	opts, args = getopt.getopt(sys.argv[1:],"cg:hkl:su:v")
+	opts, args = getopt.getopt(sys.argv[1:],"cg:hkl:psu:v")
 	for o,a in opts:
 		if o == '-g':
 			requested=int(a)
@@ -1005,6 +1044,8 @@ def read_options():
 			showkeys=True
 		elif o == '-c':
 			delay = 300
+		elif o == '-p':
+			testpad = True
 		elif o == '-s':
 			delay = 2000
 		elif o == '-l':
@@ -1198,6 +1239,11 @@ def main():
 
 	init_sounds()
 	init_screen(sc_width, sc_height)
+
+	if testpad:
+		padtest()
+		#shouldn't return
+		quit()
 
 	while True:
 		gameloop()
