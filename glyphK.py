@@ -740,6 +740,28 @@ def init_nodes(surf, np):
 	np[9] = (int(cx - dx/2), int(cy - dy/2 ))
 	np[10] = (int(cx), int(cy ))
 
+#hexagon to go round the nodes
+def init_hex(surf, hp):
+	width,height = surf.get_size()
+
+	if width > height:
+		unit = height/2
+	else:
+		unit = width/2
+
+	cx = width/2
+	cy = height/2
+
+	# sides of half-triangle
+	dx = unit * 0.866 # sin 60
+	dy = unit/2
+
+	hp[0] = (int(cx), int(cy - unit ))
+	hp[1] = (int(cx + dx), int(cy - dy ))
+	hp[2] = (int(cx + dx), int(cy + dy ))
+	hp[3] = (int(cx), int(cy + unit ))
+	hp[4] = (int(cx - dx), int(cy + dy ))
+	hp[5] = (int(cx - dx), int(cy - dy ))
 
 def init_screen(width, height):
 	global node_pos
@@ -887,10 +909,13 @@ def drawglyph(arclist, rgba):
 		light_node(a[0],rgba)
 		light_node(a[1],rgba)
 
-def miniglyph(arclist, rgba, surface, np):
+def miniglyph(arclist, rgba, surface, np, border):
 	surface.lock()
 	surface.fill((0,0,0,0))
-	#TODO surrounding hexagon
+	#hexagon outline
+	pygame.draw.polygon( surface, (rgba[0]/2, rgba[1]/2, rgba[2]/2), border, 4)
+	#hexagon fill
+	pygame.draw.polygon( surface, (rgba[0]/4, rgba[1]/4, rgba[2]/4), border)
 	for a in arclist:
 		pygame.draw.line(surface, rgba, np[a[0]], np[a[1]], 4)
 	surface.unlock()
@@ -1182,7 +1207,9 @@ def gameloop():
 	miniwidth = int(fontheight * 1.4)
 	minisurf = pygame.Surface((miniwidth,fontheight))
 	mp = [0]*11
+	hp = [0]*6
 	init_nodes(minisurf,mp)
+	init_hex(minisurf,hp)
 
 	#now make a big enough box and write each line into it
 	rbox = pygame.Surface((rwidth+twidth+miniwidth,rheight))
@@ -1201,7 +1228,7 @@ def gameloop():
 			if debug:
 				print("{} : wrong".format(name))
 			rcol = wrong
-		miniglyph(target_arcs,rcol, minisurf, mp)
+		miniglyph(target_arcs,rcol, minisurf, mp,hp)
 		rbox.blit(minisurf, (0,ry))
 		rline = rfont.render(name,True,rcol)
 		lineoffset = int( (fontheight - rline.get_height())/2)
