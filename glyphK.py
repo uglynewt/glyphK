@@ -29,6 +29,7 @@ sc_width = 800
 beige = (220,220,200)
 wrong = (255,0,0)
 right = (0,200,200)
+timercol = (255,255,128,255)
 
 
 sequence_dicts = {
@@ -656,6 +657,7 @@ glyph_dict = {
 #mapping from portal level to number of glyphs
 #0-based (Tecthulhu returns 0 for neutral portals)
 glyphcount = [ 1,1,2,3,3,3,4,4,5 ]
+timeouts = [ 20,20,20,20,19,18,17,16,15 ]
 
 #keyboard mapping for node numbers
 # must match the ".unicode" member of keydown events
@@ -702,6 +704,7 @@ def init_sounds():
 #list of surfaces to be combined during refresh()
 #screen: actual display that flip() redraws
 #counter: indicates glyph numbers: current and total
+#timer: time remaining
 #spots: the circles for each node
 #glyph: where the lines of the glyph appear
 #halo: highlight the currently-pressed nodes
@@ -767,11 +770,12 @@ def init_screen(width, height):
 	global node_pos
 	global spotsize, fontheight
 	global centre_x, centre_y
-	global kbhelp, spotsurf, glyphsurf, countsurf, halo, msgsurf
+	global kbhelp, spotsurf, glyphsurf, countsurf, timesurf, halo, msgsurf
 
 	glyphsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 	spotsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 	countsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
+	timesurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 	halo = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 	msgsurf = pygame.Surface((width,height),flags=pygame.SRCALPHA)
 
@@ -810,6 +814,7 @@ def refresh():
 
 	#draw each layer at a time
 	surface.blit(countsurf,(0,0))
+	surface.blit(timesurf,(0,0))
 	surface.blit(spotsurf,(0,0))
 	surface.blit(glyphsurf,(0,0))
 	surface.blit(halo,(0,0))
@@ -819,6 +824,54 @@ def refresh():
 		surface.blit(kbhelp,(0,0))
 
 	pygame.display.flip()
+
+#draw a circle, and plot the points of the polygon that will erase it
+def start_countdown(rgba):
+	global starttime, timer_track
+
+	pretime = pygame.time.get_ticks()
+
+	#arc looks streaky, draw a solid circle and subtract the middle
+	outer = int(centre_y)
+	inner = int(centre_y*float(29)/30)
+	surround = centre_y*2
+	c = (int(centre_x),int(centre_y))
+	timesurf.lock()
+	pygame.draw.circle(timesurf, rgba, c, outer, 0)
+	pygame.draw.circle(timesurf, (0,0,0,0), c, inner, 0)
+	timesurf.unlock()
+
+	ticks = int(time_limit/33)
+	timer_track = [0]*ticks
+	for i in range(0,ticks):
+		x=centre_x - int(surround*math.sin (math.pi * 2 * i/ticks) )
+		y=centre_y + int(surround*math.cos (math.pi * 2 * i/ticks) )
+		timer_track[i] = (x,y)
+	starttime = pygame.time.get_ticks()
+	if debug:
+		print("circled inited in {} ms".format(starttime-pretime))
+
+
+def update_countdown():
+	now = pygame.time.get_ticks()
+	remain = starttime + time_limit - now
+	if remain > time_limit:
+		remain = time_limit
+
+	timesurf.lock()
+	if remain > 0:
+		remain_f = float(remain)/time_limit
+		ticks_left = int(len(timer_track)*remain_f)
+
+		if ticks_left < len(timer_track)-1:
+			#erase a suitable slice of the circle
+			polygon = [ (centre_x,centre_y) ]
+			polygon.extend(timer_track[ticks_left:])
+			pygame.draw.polygon( timesurf, (0,0,0,0), polygon)
+	else:
+		timesurf.fill((0,0,0,0))
+	timesurf.unlock()
+
 
 def progress(current):
 	countsurf.lock()
@@ -920,8 +973,9 @@ def miniglyph(arclist, rgba, surface, np, border):
 		pygame.draw.line(surface, rgba, np[a[0]], np[a[1]], 4)
 	surface.unlock()
 
+#returns boolean "are we done yet?"
 def input(e):
-	global pressed, arcs, sequence
+	global pressed, arcs, sequence, times
 
 	glyphsdone = len(sequence)
 
@@ -934,7 +988,7 @@ def input(e):
 			release.play()
 		else:
 			#key wasn't for a (pressed) node, ignore
-			return
+			return False
 		#if list now empty, end glyph
 		if not pressed:
 			times[glyphsdone][1] = pygame.time.get_ticks()
@@ -945,6 +999,9 @@ def input(e):
 			#tell user which one they're about to start
 			if glyphsdone < needed:
 				progress(glyphsdone+1)
+			else:
+				#ignore any excess presses after we're done
+				return True
 	if e.type == pygame.KEYDOWN:
 		key = e.key
 
@@ -964,19 +1021,18 @@ def input(e):
 				progress(glyphsdone+1)
 			clearglyph()
 			haloes()
-			refresh()
-			return
+			return False
 
 		# only allow two keys at a time
 		if len(pressed) == 2:
-			return
+			return False
 
 		sym = e.unicode
 		if sym not in node_keys:
 			#key not a node
 			if debug:
 				print("ignoring key {}".format(sym))
-			return
+			return False
 		# add to currently-pressed list
 		node = node_keys.index(sym)
 		pressed[e.key] = node
@@ -996,7 +1052,6 @@ def input(e):
 				#add the arc to the list
 				arcs.append(sort_pair([src,node]))
 				light_arc(src,node,beige)
-	refresh()
 
 #simple input mode for testing pad
 def padtest():
@@ -1081,7 +1136,7 @@ def read_options():
 			debug=True
 
 def gameloop():
-	global needed, level
+	global needed, level, time_limit
 	global sequence, times
 
 	waiting = True
@@ -1115,13 +1170,16 @@ def gameloop():
 	if level is not None:
 		if 0<=level<=8:
 			numglyphs = glyphcount[level]
+			time_limit = timeouts[level]*1000
 		else:
 			print("Unexpected portal level {}".format(level))
 			quit()
 	elif requested:
 		numglyphs = requested
+		time_limit = 20000
 	else:
 		numglyphs = random.randint(1,5)
+		time_limit = 1000*timeouts[glyphcount.index(numglyphs)]
 	target_list = sequence_dicts[numglyphs]
 	target_phrase = target_list[random.randrange(len(target_list))]
 
@@ -1163,22 +1221,27 @@ def gameloop():
 	pygame.event.clear((pygame.KEYDOWN,pygame.KEYUP))
 	#read user input
 	pygame.event.set_allowed((pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP))
+	start_countdown(timercol)
 	glyphing = True
 	sequence = []
 	times = [0]*5
 	progress(1)
 	while glyphing:
+		update_countdown()
 		refresh()
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				quit()
 			if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
-				input(event)
+				if input(event):
+					pygame.event.clear((pygame.KEYDOWN,pygame.KEYUP))
+					break
 		
 		if len(sequence) == needed:
 			glyphing = False
 		pygame.time.wait(33)
 
+	timesurf.fill((0,0,0,0))
 	progress(0)
 
 	if debug:
