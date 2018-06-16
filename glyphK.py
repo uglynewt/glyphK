@@ -1252,12 +1252,16 @@ def gameloop():
 	if debug:
 		print("checking results")
 
+	#correct until mistake found
+	correct = True
+
 	rfont = pygame.font.Font(None,int(fontheight))
 
 	#check how much space the results will take
 	rwidth=0
 	twidth=0
-	rheight=needed*fontheight
+	#one line per glyph + bonus
+	rheight=(needed+1)*fontheight
 	for n in range(0,needed):
 		#first column: glyph name
 		name = target_phrase[n]
@@ -1300,6 +1304,7 @@ def gameloop():
 			if debug:
 				print("{} : wrong".format(name))
 			rcol = wrong
+			correct = False
 		miniglyph(target_arcs,rcol, minisurf, mp,hp)
 		rbox.blit(minisurf, (0,ry))
 		rline = rfont.render(name,True,rcol)
@@ -1319,6 +1324,23 @@ def gameloop():
 		pygame.event.pump()
 
 		pygame.time.wait(delay)
+
+	if correct:
+		bonus = int(100*float(remain)/time_limit)
+
+		if debug:
+			print("Speed bonus: {}%".format(bonus))
+		bline = rfont.render("Speed bonus: {}%".format(bonus),True,rcol)
+
+		rbox.blit(bline, (0,ry+lineoffset))
+
+		surface.lock()
+		surface.fill((0,0,0))
+		surface.unlock()
+		surface.blit(rbox, (int(centre_x - (rwidth+twidth+miniwidth)/2), int(centre_y - rheight/2)) )
+		pygame.display.flip()
+		pygame.event.pump()
+
 
 	pygame.time.wait(2000)
 
