@@ -853,6 +853,7 @@ def start_countdown(rgba):
 
 
 def update_countdown():
+	global remain
 	now = pygame.time.get_ticks()
 	remain = starttime + time_limit - now
 	if remain > time_limit:
@@ -1237,9 +1238,13 @@ def gameloop():
 					pygame.event.clear((pygame.KEYDOWN,pygame.KEYUP))
 					break
 		
-		if len(sequence) == needed:
+		if len(sequence) == needed or remain<=0:
 			glyphing = False
 		pygame.time.wait(33)
+
+	#erase any glyph still being drawn
+	halo.fill((0,0,0,0))
+	clearglyph()
 
 	timesurf.fill((0,0,0,0))
 	progress(0)
@@ -1259,6 +1264,10 @@ def gameloop():
 		box = rfont.size(name)
 		if rwidth < box[0]:
 			rwidth=box[0]
+
+		if n>=len(sequence):
+			#no more glyphs entered, no times to display
+			break
 
 		#second column: times (when correct)
 		ms = float(times[n][1] - times[n][0])/1000
@@ -1281,7 +1290,7 @@ def gameloop():
 	for n in range(0,needed):
 		name = target_phrase[n]
 		target_arcs = glyph_dict[name]
-		if glyph_match(target_arcs, sequence[n]):
+		if n < len(sequence) and glyph_match(target_arcs, sequence[n]):
 			ms = float(times[n][1] - times[n][0])/1000
 			if debug:
 				print("{} : correct, {:.2f}s".format(name,ms))
