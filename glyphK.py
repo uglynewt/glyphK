@@ -1256,6 +1256,7 @@ def gameloop():
 	correct = True
 
 	rfont = pygame.font.Font(None,int(fontheight))
+	bline = rfont.render("Speed bonus: 100%",True,right)
 
 	#check how much space the results will take
 	rwidth=0
@@ -1330,7 +1331,7 @@ def gameloop():
 
 		if debug:
 			print("Speed bonus: {}%".format(bonus))
-		bline = rfont.render("Speed bonus: {}%".format(bonus),True,rcol)
+		bline = rfont.render("Speed bonus: {}%".format(bonus),True,right)
 
 		rbox.blit(bline, (0,ry+lineoffset))
 
